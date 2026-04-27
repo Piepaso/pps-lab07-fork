@@ -1,6 +1,12 @@
 package ex3
 
 object Solitaire extends App:
+  type Pos = (Int, Int)
+  type Solution = Seq[Pos]
+  type IterableFactory = Solution => Iterable[Solution]
+  given IterableFactory = LazyList(_)
+  
+  
   def render(solution: Seq[(Int, Int)], width: Int, height: Int): String =
     val reversed = solution.reverse
     val rows =
@@ -11,26 +17,31 @@ object Solitaire extends App:
       yield row.mkString
     rows.mkString("\n")
 
-  def placeMarks(w: Int, h: Int): Seq[(Int, Int)] = {
-    def inGrid(p: (Int, Int)): Boolean = p._1 >= 0 && p._2 >= 0 && p._1 < w && p._2 < h
+  def placeMarks(w: Int, h: Int): Iterable[Solution] =
+    
+    def inGrid(p: Pos): Boolean = p._1 >= 0 && p._2 >= 0 && p._1 < w && p._2 < h
 
-    def possibleNext(p: (Int, Int)): Seq[(Int, Int)] =
+    def possibleNext(x: Int, y: Int): Seq[Pos] =
       val sDiagonal = Seq(0, -3, 3)
       val sPerpendicular = Seq(-2, 2)
       ( for
-          x <- sDiagonal
-          y <- sDiagonal
-          if Math.abs(x + y) == 3
-        yield (p._1 + x, p._2 + y)).concat(
+          dx <- sDiagonal
+          dy <- sDiagonal
+          if Math.abs(dx + dy) == 3
+        yield (x + dx, y + dy)).concat(
         for
-          x <- sPerpendicular
-          y <- sPerpendicular
-        yield (p._1 + x, p._2 + y)
-      )
+          dx <- sPerpendicular
+          dy <- sPerpendicular
+        yield (x + dx, y + dy)
+      ).filter(inGrid)
 
-    possibleNext(3, 2).filter(inGrid)
-  }
+
+    for
+      p <- possibleNext(3, 2)
+      n <- 1 until 35
+    yield p
 
   val width = 7
   val height = 5
-  println(render(solution = placeMarks(width, height), width, height))
+  placeMarks(width, height).foreach(s => println(render(s), width, height))
+  
